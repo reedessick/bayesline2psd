@@ -21,6 +21,10 @@ parser = OptionParser(usage=__usage__, description=__doc__)
 
 parser.add_option('-v', '--verbose', default=False, action='store_true')
 
+parser.add_option('', '--level', default=[], action='append', type='float',
+    help='confidence levels for process plot. \
+DEFAULT=[0.1, 0.5, 0.9]')
+
 parser.add_option('-o', '--output-dir', default='.', type='string')
 parser.add_option('-t', '--tag', default='', type='string')
 
@@ -33,6 +37,12 @@ if not os.path.exists(opts.output_dir):
 if opts.tag:
     opts.tag = "_"+opts.tag
 
+if not opts.level:
+    opts.level = [0.1, 0.5, 0.9]
+
 #-------------------------------------------------
 
-raise NotImplementedError
+raise NotImplementedError, '''
+make a plot that shows confidence bounds at each frequency
+show distribution of KL divergence between all pair-wise combinations of posterior draws
+'''
