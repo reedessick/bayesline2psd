@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+__usage__ = "chains2psd [--options] spline.dat lines.dat"
+__doc__ = "a simple script that reads in BayesWave chains and generates PSDs from those parameters. This script will write many PSDs to disk, so be careful where you run in (which filesystem, etc)."
+__author__ = "reed.essick@ligo.org"
+
+#-------------------------------------------------
+
+import os
+
+import numpy as np
+
+from optparse import OptionParser
+
+### non-standard libraries
+from bayesline2psd import utils
+
+#-------------------------------------------------
+
+parser = OptionParser(usage=__usage__, description=__doc__)
+
+parser.add_option("-v", "--verbose", default=False, action="store_true")
+parser.add_option("-V", "--Verbose", default=False, action="store_true")
+
+parser.add_option('', '--burnin', default=utils.DEFAULT_BURNIN, type='int',
+    help='throw away this many samples from the begining of the chains')
+parser.add_option('', '--downsample', default=utils.DEFAULT_DOWNSAMPLE, type='int',
+    help='retain 1 out of every --downsample samples after burnin')
+
+parser.add_option('', '--srate', default=2048., type='float',
+    help="the sampling rate requested in Hz. Used to set frequencies of PSD estimates")
+parser.add_option('', '--seglen', default=100., type='float',
+    help='the segment length requested in seconds. Used to set frequencies of PSD estimates')
+
+parser.add_option("-o", "--output-dir", default='.', type="string")
+parser.add_option("-t", "--tag", default="", type="string")
+
+opts, args = parser.parse_args()
+assert len(args)==2, 'please supply exactly 2 input arguments\n%s'%__usage__
+spline_path, lines_path = args
+
+if not os.path.exists(opts.output_dir):
+    os.makedirs(opts.output_dir)
+
+if opts.tag:
+    opts.tag = "_"+opts.tag
+
+opts.verbose |= opts.Verbose
+
+#-------------------------------------------------
+
+if opts.verbose:
+    print('reading spline parametes from: '+spline_path)
+spline_samples = utils.splinepath2samples(path, burnin=opts.burnin, downsample=opts.downsample)
+
+if opts.verbose:
+    print('reading line parameters from: '+lines_path)
+lines_samples = utils.linespath2samples(path, burnin=opts.burnin, downsample=opts.downsample)
+
+#------------------------
+
+freqs = np.arange(0, opts.srate/2, 1./opts.seglen) ### standard FFT frequency spacing
+
+if opts.verbose:
+    print('estimating PSDs')
+psds = utils.samples2psd(freqs, spline_samples, lines_samples)
+
+### now write them to disk
+template = "%s/chains2psd%s"%(opts.output_dir, opts.tag) + "-%d.txt"
+for ind, psd in enumerate(psds):
+    filename = template%ind
+    if opts.Verbose:
+        print('saving: '+filename)
+    np.savetxt(filename, np.transpose([freqs, psd]))

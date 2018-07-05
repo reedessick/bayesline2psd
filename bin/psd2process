@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+
+__usage__ = "psd2process [--options] psd.txt [psd.txt ...]"
+__doc__ = "a script that picks up frequency arrays representing PSDs from disk and generates some basic summary information"
+__author__ = "reed.essick@ligo.org"
+
+#-------------------------------------------------
+
+import os
+import numpy as np
+
+import matplotlib
+matplotlib.use("Agg")
+from matplotlib import pyplpot as plt
+
+from optparse import OptionParser
+
+#-------------------------------------------------
+
+parser = OptionParser(usage=__usage__, description=__doc__)
+
+parser.add_option('-v', '--verbose', default=False, action='store_true')
+
+parser.add_option('-o', '--output-dir', default='.', type='string')
+parser.add_option('-t', '--tag', default='', type='string')
+
+opts, args = parser.parse_args()
+assert len(args), 'please supply at least 1 input argument\n%s'%__usage__
+
+if not os.path.exists(opts.output_dir):
+    os.makedirs(opts.output_dir)
+
+if opts.tag:
+    opts.tag = "_"+opts.tag
+
+#-------------------------------------------------
+
+raise NotImplementedError
