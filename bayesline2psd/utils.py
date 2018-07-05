@@ -10,7 +10,7 @@ __author__ = "reed.essick@ligo.org"
 #-------------------------------------------------
 
 import numpy as np
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import UnivariateSpline
 
 #-------------------------------------------------
 
@@ -30,7 +30,7 @@ def splinepath2samples(path, burnin=DEFAULT_BURNIN, downsample=DEFAULT_DOWNSAMPL
     with open(path, 'r') as file_obj:
         for ind, line in enumerate(file_obj):
             if (ind>=burnin) and (ind%downsample==0):
-                fields = [float(_) for _ in line.strip().split()[1:]
+                fields = [float(_) for _ in line.strip().split()[1:]]
                 samples.append(np.array(zip(fields[::2], fields[1::2]), dtype=SPLINE_DTYPE)) ### stored as (frequency, ln(PSD)) pairs
 
     return samples
@@ -43,7 +43,7 @@ def linespath2samples(path, burnin=DEFAULT_BURNIN, downsample=DEFAULT_DOWNSAMPLE
     with open(path, 'r') as file_obj:
         for ind, line in enumerate(file_obj):
             if (ind>=burnin) and (ind%downsample==0):
-                fields = [float(_) for _ in line.strip().split()[1:]
+                fields = [float(_) for _ in line.strip().split()[1:]]
                 samples.append(np.array(zip(fields[::3], fields[1::3], fields[2::3]), dtype=LINES_DTYPE)) ### stored as (frequency, ln(PSD)) pairs
 
     return samples
@@ -63,7 +63,7 @@ def splinesamples2psd(freqs, samples):
     nsamp = len(samples)
     psds = np.empty((nsamp, nfreq), dtype=float)
     for ind, sample in enumerate(samples):
-        spline = CubicSpline(sample['frequency'], sample['lnPSD'])
+        spline = UnivariateSpline(sample['frequency'], sample['lnPSD'], k=3) ### k=3 --> cubic
         psds[ind,:] = spline(freqs)
     
     return np.exp(psds)
