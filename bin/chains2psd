@@ -64,7 +64,7 @@ lines_samples = utils.linespath2samples(lines_path, burnin=opts.burnin, downsamp
 
 #------------------------
 
-freqs = np.arange(0, opts.srate/2, 0.1/seglen) ### finer than the standard FFT frequency spacing
+freqs = np.arange(0, opts.srate/2, 1./seglen) ### the standard FFT frequency spacing
 
 if opts.verbose:
     print('estimating PSDs')
