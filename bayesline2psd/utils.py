@@ -3,7 +3,7 @@ a module holding simple utilities for reading bayesline chains. The conventions 
     spline file structure: BayesWaveIO.c line 1737
     spline model:          BayesLine.c lines 1105-1139
     line file structure:   BayesWaveIO.c line 1773
-    line model:            BayesWaveIO.c lines 20-66
+    line model:            BayesLine.c 796-865 **not** BayesWaveIO.c lines 20-66
 """
 __author__ = "reed.essick@ligo.org"
 
@@ -81,11 +81,11 @@ def linessamples2psd(freqs, samples, seglen, verbose=False):
         if verbose:
             print('line sample %d'%ind)
         for f, a, q in sample:
-            psds[ind,:] += line(freqs, f, a, q)
+            psds[ind,:] += line(freqs, f, a, q, seglen)
 
-    return psds/(seglen/2.)
+    return psds
 
-def line(freqs, f, a, q):
+def line(freqs, f, a, q, seglen):
     """
     the line model Bayesline implements
     """
@@ -94,7 +94,7 @@ def line(freqs, f, a, q):
     ### figure out which frequencies actually contribute
     spread = max(50, q*1e-2)
     df = f/spread
-    truth = (f-df <= freqs)*(freqs <= f+df)
+    truth = (f-4*df <= freqs)*(freqs <= f+4*df)
     freqs = freqs[truth]
 
     ### compute contribution
@@ -102,7 +102,9 @@ def line(freqs, f, a, q):
     z[z>1] = 1
 
     f2 = f**2
+    f4 = f**4
     freqs2 = freqs**2
 
-    psd[truth] = z*(a*f2/q**2)/(freqs2*(freqs2-f2)**2)
-    return psd
+    psd[truth] = z*(a*f4)/(f2*freqs2 + q**2*(freqs2-f2)**2)
+
+    return psd/(seglen/2.)

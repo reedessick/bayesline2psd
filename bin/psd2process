@@ -31,6 +31,9 @@ parser.add_option('', '--level', default=[], action='append', type='float',
     help='confidence levels for process plot. \
 DEFAULT=[0.1, 0.5, 0.9]')
 
+parser.add_option('', '--stack', default=False, action='store_true',
+    help='plot all the samples on the same axes instead of just quantiles')
+
 parser.add_option('-o', '--output-dir', default='.', type='string')
 parser.add_option('-t', '--tag', default='', type='string')
 
@@ -63,6 +66,36 @@ for ind, path in enumerate(args[1:]):
     f, p = np.loadtxt(path).transpose()
     assert np.all(f==freq)
     psds[ind+1,:] = p
+
+if opts.stack:
+    if opts.verbose:
+        print('plotting')
+    fig = plt.figure()
+    ax = fig.gca()
+
+    for i in xrange(nsamp):
+        ax.plot(freq, psds[i,:], alpha=0.25)
+
+    ax.set_xlabel('frequency')
+    ax.set_ylabel('psd')
+
+    ax.grid(True, which='both')
+
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+    if opts.xlim is not None:
+        ax.set_xlim(opts.xlim)
+    else:
+        ax.set_xlim(xmin=min(freq), xmax=max(freq))
+    if opts.ylim is not None:
+        ax.set_ylim(opts.ylim)
+
+    figname = '%s/psd2process-stack%s.png'%(opts.output_dir, opts.tag)
+    if opts.verbose:
+        print('saving: '+figname)
+    plt.savefig(figname)
+    plt.close(fig)
 
 #------------------------
 
@@ -132,9 +165,9 @@ if opts.verbose:
 fig = plt.figure()
 ax = fig.gca()
 
-ax.hist(dkl, bins=max(10, int(nsamp**0.5)), histtype='step')
+ax.hist(np.log10(dkl), bins=max(10, int(nsamp**0.5)), histtype='step')
 
-ax.set_xlabel('symmetric KL divergence')
+ax.set_xlabel('log10(symmetric KL divergence)')
 ax.set_ylabel('count')
 
 ax.grid(True, which='both')

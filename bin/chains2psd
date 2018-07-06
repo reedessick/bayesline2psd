@@ -64,7 +64,7 @@ lines_samples = utils.linespath2samples(lines_path, burnin=opts.burnin, downsamp
 
 #------------------------
 
-freqs = np.arange(0, opts.srate/2, 1./seglen) ### standard FFT frequency spacing
+freqs = np.arange(0, opts.srate/2, 0.1/seglen) ### finer than the standard FFT frequency spacing
 
 if opts.verbose:
     print('estimating PSDs')
@@ -84,9 +84,11 @@ for ind, psd in enumerate(psds):
         fig = plt.figure()
         ax = fig.gca()
 
-        ax.plot(freqs, psd)
         for f, a in spline_samples[ind]:
             ax.plot(f, np.exp(a)*factor, marker='o', markeredgecolor='k', markerfacecolor='None')
+        ax.plot(freqs, utils.linessamples2psd(freqs, [lines_samples[ind]], seglen)[0,:], 'k')
+            
+        ax.plot(freqs, psd)
 
         ax.set_xscale('log')
         ax.set_yscale('log')
