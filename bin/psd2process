@@ -11,7 +11,7 @@ import numpy as np
 
 import matplotlib
 matplotlib.use("Agg")
-from matplotlib import pyplpot as plt
+from matplotlib import pyplot as plt
 
 from optparse import OptionParser
 
@@ -20,6 +20,12 @@ from optparse import OptionParser
 parser = OptionParser(usage=__usage__, description=__doc__)
 
 parser.add_option('-v', '--verbose', default=False, action='store_true')
+
+parser.add_option('', '--callout', default=None, type='string',
+    help='the path to a frequency array that you want plotted as a callout')
+
+parser.add_option('', '--fmin', default=16, type='float')
+parser.add_option('', '--ylim', nargs=2, type='float', default=None)
 
 parser.add_option('', '--level', default=[], action='append', type='float',
     help='confidence levels for process plot. \
@@ -42,7 +48,96 @@ if not opts.level:
 
 #-------------------------------------------------
 
-raise NotImplementedError, '''
-make a plot that shows confidence bounds at each frequency
-show distribution of KL divergence between all pair-wise combinations of posterior draws
-'''
+### read in data
+if opts.verbose:
+    print('reading: '+args[0])
+freq, p = np.loadtxt(args[0]).transpose()
+nfreq = len(freq)
+nsamp = len(args)
+psds = np.empty((nsamp, nfreq), dtype=float)
+psds[0,:] = p
+
+for ind, path in enumerate(args[1:]):
+    if opts.verbose:
+        print('reading: '+path)
+    f, p = np.loadtxt(path).transpose()
+    assert np.all(f==freq)
+    psds[ind+1,:] = p
+
+#------------------------
+
+### compute quantiles
+if opts.verbose:
+    print('computing quantiles')
+quantiles = []
+for level in opts.level:
+    quantile = np.empty(nfreq, dtype=float)
+    for i in xrange(nfreq):
+        quantile[i] = np.percentile(psds[:,i], level*100)
+    quantiles.append(quantile)
+
+### make a plot
+if opts.verbose:
+    print('plotting')
+fig = plt.figure()
+ax = fig.gca()
+
+for level, quantile in zip(opts.level, quantiles):
+    ax.plot(freq, quantile, label='%.f'%(level*100), alpha=0.75)
+
+if opts.callout is not None:
+    if opts.verbose:
+        print('reading callout from: '+opts.callout)
+    F, P = np.loadtxt(opts.callout).transpose()
+    ax.plot(F, P, color='k', linewidth=2, alpha=0.75)
+
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.set_xlim(xmin=opts.fmin, xmax=max(freq))
+if opts.ylim is not None:
+    ax.set_ylim(opts.ylim)
+
+ax.set_xlabel('frequency')
+ax.set_ylabel('psd')
+
+ax.grid(True, which='both')
+ax.legend(loc='best')
+
+figname = '%s/psd2process-proc%s.png'%(opts.output_dir, opts.tag)
+if opts.verbose:
+    print('saving: '+figname)
+plt.savefig(figname)
+plt.close(fig)
+
+#------------------------
+
+### compute distribution of KL Divergences
+if opts.verbose:
+    print('computing KL divergences')
+dkl = []
+for i in xrange(nsamp):
+    for j in xrange(i+1, nsamp):
+        x = 2*np.log(np.abs(psds[i,:]-psds[j,:])) - np.log(psds[i,:]) - np.log(psds[j,:])
+        x[psds[i,:]==np.infty] = 0 ### skip points where things diverge. This should be a trivial measure in total
+        x[psds[j,:]==np.infty] = 0
+        m = np.max(x)
+
+        dkl.append( np.trapz(np.exp(x-m), freq)*np.exp(m) )
+
+if opts.verbose:
+    print('plotting')
+fig = plt.figure()
+ax = fig.gca()
+
+ax.hist(dkl, bins=max(10, int(nsamp**0.5)), histtype='step')
+
+ax.set_xlabel('symmetric KL divergence')
+ax.set_ylabel('count')
+
+ax.grid(True, which='both')
+
+figname = '%s/psd2process-Dkl%s.png'%(opts.output_dir, opts.tag)
+if opts.verbose:
+    print('saving: '+figname)
+plt.savefig(figname)
+plt.close(fig)

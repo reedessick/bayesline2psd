@@ -10,6 +10,10 @@ import os
 
 import numpy as np
 
+import matplotlib
+matplotlib.use("Agg")
+from matplotlib import pyplot as plt
+
 from optparse import OptionParser
 
 ### non-standard libraries
@@ -32,6 +36,8 @@ parser.add_option('', '--srate', default=2048., type='float',
 parser.add_option('', '--seglen', default=100., type='float',
     help='the segment length requested in seconds. Used to set frequencies of PSD estimates')
 
+parser.add_option('', '--sanity-check', default=False, action='store_true')
+
 parser.add_option("-o", "--output-dir", default='.', type="string")
 parser.add_option("-t", "--tag", default="", type="string")
 
@@ -51,11 +57,11 @@ opts.verbose |= opts.Verbose
 
 if opts.verbose:
     print('reading spline parametes from: '+spline_path)
-spline_samples = utils.splinepath2samples(path, burnin=opts.burnin, downsample=opts.downsample)
+spline_samples = utils.splinepath2samples(spline_path, burnin=opts.burnin, downsample=opts.downsample)
 
 if opts.verbose:
     print('reading line parameters from: '+lines_path)
-lines_samples = utils.linespath2samples(path, burnin=opts.burnin, downsample=opts.downsample)
+lines_samples = utils.linespath2samples(lines_path, burnin=opts.burnin, downsample=opts.downsample)
 
 #------------------------
 
@@ -63,12 +69,32 @@ freqs = np.arange(0, opts.srate/2, 1./opts.seglen) ### standard FFT frequency sp
 
 if opts.verbose:
     print('estimating PSDs')
-psds = utils.samples2psd(freqs, spline_samples, lines_samples)
+psds = utils.samples2psd(freqs, spline_samples, lines_samples, verbose=opts.Verbose)
 
 ### now write them to disk
 template = "%s/chains2psd%s"%(opts.output_dir, opts.tag) + "-%d.txt"
+figlate = "%s/chains2psd%s"%(opts.output_dir, opts.tag) + "-%d.png"
 for ind, psd in enumerate(psds):
     filename = template%ind
     if opts.Verbose:
         print('saving: '+filename)
     np.savetxt(filename, np.transpose([freqs, psd]))
+
+    if opts.sanity_check:
+        fig = plt.figure()
+        ax = fig.gca()
+
+        ax.plot(freqs, psd)
+        for f, a in spline_samples[ind]:
+            ax.plot(f, np.exp(a), marker='o', markeredgecolor='k', markerfacecolor='None')
+
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+
+        ax.grid(True, which='both')
+
+        figname = figlate%ind
+        if opts.Verbose:
+            print('saving: '+figname)
+        fig.savefig(figname)
+        plt.close(fig)
