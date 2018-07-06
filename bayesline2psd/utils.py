@@ -3,7 +3,7 @@ a module holding simple utilities for reading bayesline chains. The conventions 
     spline file structure: BayesWaveIO.c line 1737
     spline model:          BayesLine.c lines 1105-1139
     line file structure:   BayesWaveIO.c line 1773
-    line model:            BayesLine.c 796-865 **not** BayesWaveIO.c lines 20-66
+    line model:            BayesLine.c lines 796-865 **not** BayesWaveIO.c lines 20-66
 """
 __author__ = "reed.essick@ligo.org"
 
