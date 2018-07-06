@@ -73,6 +73,12 @@ if opts.stack:
     fig = plt.figure()
     ax = fig.gca()
 
+    if opts.callout is not None:
+        if opts.verbose:
+            print('reading callout from: '+opts.callout)
+        F, P = np.loadtxt(opts.callout).transpose()
+        ax.plot(F, P, color='k', linewidth=2, alpha=0.25)
+
     for i in xrange(nsamp):
         ax.plot(freq, psds[i,:], alpha=0.25)
 
@@ -115,14 +121,14 @@ if opts.verbose:
 fig = plt.figure()
 ax = fig.gca()
 
-for level, quantile in zip(opts.level, quantiles):
-    ax.plot(freq, quantile, label='%.f'%(level*100), alpha=0.75)
-
 if opts.callout is not None:
     if opts.verbose:
         print('reading callout from: '+opts.callout)
     F, P = np.loadtxt(opts.callout).transpose()
-    ax.plot(F, P, color='k', linewidth=2, alpha=0.75)
+    ax.plot(F, P, color='k', linewidth=2, alpha=0.25)
+
+for level, quantile in zip(opts.level, quantiles):
+    ax.plot(freq, quantile, label='%.f'%(level*100), alpha=0.75)
 
 ax.set_xscale('log')
 ax.set_yscale('log')
