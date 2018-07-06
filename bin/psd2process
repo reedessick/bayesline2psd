@@ -130,6 +130,7 @@ if opts.xlim is not None:
     ax.set_xlim(opts.xlim)
 else:
     ax.set_xlim(xmin=min(freq), xmax=max(freq))
+
 if opts.ylim is not None:
     ax.set_ylim(opts.ylim)
 
@@ -152,9 +153,9 @@ if opts.verbose:
     print('computing KL divergences')
 dkl = []
 if opts.xlim is not None:
-    truth = (opts.xlim[0]<=freqs)*(freqs<=opts.xlim[1])
+    truth = (opts.xlim[0]<=freq)*(freq<=opts.xlim[1])
 else:
-    truth = np.ones_like(freqs, dtype=bool)
+    truth = np.ones_like(freq, dtype=bool)
 
 for i in xrange(nsamp):
     for j in xrange(i+1, nsamp):
