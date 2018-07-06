@@ -24,8 +24,8 @@ parser.add_option('-v', '--verbose', default=False, action='store_true')
 parser.add_option('', '--callout', default=None, type='string',
     help='the path to a frequency array that you want plotted as a callout')
 
-parser.add_option('', '--fmin', default=16, type='float')
 parser.add_option('', '--ylim', nargs=2, type='float', default=None)
+parser.add_option('', '--xlim', nargs=2, type='float', default=None)
 
 parser.add_option('', '--level', default=[], action='append', type='float',
     help='confidence levels for process plot. \
@@ -93,7 +93,10 @@ if opts.callout is not None:
 
 ax.set_xscale('log')
 ax.set_yscale('log')
-ax.set_xlim(xmin=opts.fmin, xmax=max(freq))
+if opts.xlim is not None:
+    ax.set_xlim(opts.xlim)
+else:
+    ax.set_xlim(xmin=min(freq), xmax=max(freq))
 if opts.ylim is not None:
     ax.set_ylim(opts.ylim)
 

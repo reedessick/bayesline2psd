@@ -48,14 +48,14 @@ def linespath2samples(path, burnin=DEFAULT_BURNIN, downsample=DEFAULT_DOWNSAMPLE
 
     return samples
 
-def samples2psd(freqs, spline_samples, lines_samples, verbose=False):
+def samples2psd(freqs, spline_samples, lines_samples, seglen, verbose=False):
     """
     returns psd estimates based on the samples provided
     """
     assert len(spline_samples)==len(lines_samples), 'we must have the same number of spline_samples and line_samples'
-    return splinesamples2psd(freqs, spline_samples, verbose=verbose) + linessamples2psd(freqs, lines_samples, verbose=verbose)
+    return splinesamples2psd(freqs, spline_samples, seglen, verbose=verbose) + linessamples2psd(freqs, lines_samples, seglen, verbose=verbose)
 
-def splinesamples2psd(freqs, samples, verbose=False):
+def splinesamples2psd(freqs, samples, seglen, verbose=False):
     """
     return the spline's contribution to the PSD estimate at freqs for each sample
     """
@@ -68,9 +68,9 @@ def splinesamples2psd(freqs, samples, verbose=False):
         spline = UnivariateSpline(sample['frequency'], sample['lnPSD'], k=3, s=0) ### k=3 --> cubic, s=0 --> interpolate through data
         psds[ind,:] = np.exp(spline(freqs))
     
-    return psds
+    return psds/(seglen/2.)
 
-def linessamples2psd(freqs, samples, verbose=False):
+def linessamples2psd(freqs, samples, seglen, verbose=False):
     """
     return the lines' contribution to the PSD estimate at freqs for each sample
     """
@@ -83,7 +83,7 @@ def linessamples2psd(freqs, samples, verbose=False):
         for f, a, q in sample:
             psds[ind,:] += line(freqs, f, a, q)
 
-    return psds
+    return psds/(seglen/2.)
 
 def line(freqs, f, a, q):
     """

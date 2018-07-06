@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__usage__ = "chains2psd [--options] spline.dat lines.dat"
+__usage__ = "chains2psd [--options] spline.dat lines.dat seglen"
 __doc__ = "a simple script that reads in BayesWave chains and generates PSDs from those parameters. This script will write many PSDs to disk, so be careful where you run in (which filesystem, etc)."
 __author__ = "reed.essick@ligo.org"
 
@@ -33,8 +33,6 @@ parser.add_option('', '--downsample', default=utils.DEFAULT_DOWNSAMPLE, type='in
 
 parser.add_option('', '--srate', default=2048., type='float',
     help="the sampling rate requested in Hz. Used to set frequencies of PSD estimates")
-parser.add_option('', '--seglen', default=100., type='float',
-    help='the segment length requested in seconds. Used to set frequencies of PSD estimates')
 
 parser.add_option('', '--sanity-check', default=False, action='store_true')
 
@@ -42,8 +40,9 @@ parser.add_option("-o", "--output-dir", default='.', type="string")
 parser.add_option("-t", "--tag", default="", type="string")
 
 opts, args = parser.parse_args()
-assert len(args)==2, 'please supply exactly 2 input arguments\n%s'%__usage__
-spline_path, lines_path = args
+assert len(args)==3, 'please supply exactly 3 input arguments\n%s'%__usage__
+spline_path, lines_path, seglen = args
+seglen = float(seglen)
 
 if not os.path.exists(opts.output_dir):
     os.makedirs(opts.output_dir)
@@ -65,15 +64,16 @@ lines_samples = utils.linespath2samples(lines_path, burnin=opts.burnin, downsamp
 
 #------------------------
 
-freqs = np.arange(0, opts.srate/2, 1./opts.seglen) ### standard FFT frequency spacing
+freqs = np.arange(0, opts.srate/2, 1./seglen) ### standard FFT frequency spacing
 
 if opts.verbose:
     print('estimating PSDs')
-psds = utils.samples2psd(freqs, spline_samples, lines_samples, verbose=opts.Verbose)
+psds = utils.samples2psd(freqs, spline_samples, lines_samples, seglen, verbose=opts.Verbose)
 
 ### now write them to disk
 template = "%s/chains2psd%s"%(opts.output_dir, opts.tag) + "-%d.txt"
 figlate = "%s/chains2psd%s"%(opts.output_dir, opts.tag) + "-%d.png"
+factor = 2./seglen
 for ind, psd in enumerate(psds):
     filename = template%ind
     if opts.Verbose:
@@ -86,7 +86,7 @@ for ind, psd in enumerate(psds):
 
         ax.plot(freqs, psd)
         for f, a in spline_samples[ind]:
-            ax.plot(f, np.exp(a), marker='o', markeredgecolor='k', markerfacecolor='None')
+            ax.plot(f, np.exp(a)*factor, marker='o', markeredgecolor='k', markerfacecolor='None')
 
         ax.set_xscale('log')
         ax.set_yscale('log')
